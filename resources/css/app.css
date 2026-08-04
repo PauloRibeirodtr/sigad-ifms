@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+@source '../views/**/*.blade.php';
+@source '../js/**/*.js';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Inter', 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+    --color-brand-50: #eff8f1;
+    --color-brand-100: #dcefe1;
+    --color-brand-200: #bbdfc5;
+    --color-brand-300: #8dc79d;
+    --color-brand-400: #58a873;
+    --color-brand-500: #328a54;
+    --color-brand-600: #1f7041;
+    --color-brand-700: #195a36;
+    --color-brand-800: #17482e;
+    --color-brand-900: #143c27;
+    --color-brand-950: #092217;
+    --color-warning-50: #fff8eb;
+    --color-warning-100: #feebc7;
+    --color-warning-500: #e78a17;
+    --color-warning-700: #a84f0f;
+    --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 12px 34px rgb(15 23 42 / 0.06);
+    --shadow-sidebar: 12px 0 34px rgb(15 23 42 / 0.08);
+}
+
+@media print {
+    @page {
+        margin: 14mm;
+        size: A4 portrait;
+    }
+
+    .report-document {
+        font-size: 10pt;
+    }
+
+    .report-break-avoid {
+        break-inside: avoid;
+    }
+
+    a {
+        color: inherit;
+        text-decoration: none;
+    }
+}
+
+@layer base {
+    :root {
+        color-scheme: light;
+    }
+
+    html {
+        min-width: 320px;
+        background: #f8fafc;
+    }
+
+    body {
+        min-height: 100vh;
+        background: #f8fafc;
+        color: #172033;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    a,
+    input {
+        outline-offset: 3px;
+    }
+
+    button:focus-visible,
+    a:focus-visible,
+    input:focus-visible {
+        outline: 2px solid #328a54;
+    }
+}
