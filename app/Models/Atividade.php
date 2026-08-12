@@ -8,6 +8,7 @@ use App\Enums\AtividadePrioridade;
 use App\Enums\AtividadeStatus;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
+use Database\Factories\AtividadeFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Atividade extends Model
 {
-    /** @use HasFactory<\Database\Factories\AtividadeFactory> */
+    /** @use HasFactory<AtividadeFactory> */
     use HasFactory;
 
     protected $attributes = [
@@ -85,7 +86,11 @@ class Atividade extends Model
             ->where(fn (Builder $deadline) => $deadline
                 ->whereNull('prazo')
                 ->orWhereDate('prazo', '>=', $date->format('Y-m-d')))
-            ->where($latestMovementDate, '<=', $cutoff);
+            ->where(fn (Builder $updates) => $updates
+                ->where($latestMovementDate, '<=', $cutoff)
+                ->orWhere(fn (Builder $withoutMovements) => $withoutMovements
+                    ->whereDoesntHave('movimentacoes')
+                    ->whereDate('data_atividade', '<=', $date->copy()->subDays($days)->format('Y-m-d'))));
     }
 
     public function scopeForIndicator(Builder $query, AtividadeIndicador $indicator): Builder
@@ -119,8 +124,13 @@ class Atividade extends Model
         $date = $referenceDate ?? today();
         $lastMovementDate = $this->getAttribute('ultima_movimentacao_em');
 
-        if ($lastMovementDate === null || ! $this->isOperational()) {
+        if (! $this->isOperational()) {
             return false;
+        }
+
+        if ($lastMovementDate === null) {
+            return $this->data_atividade->lte($date->copy()->subDays($days))
+                && ($this->prazo === null || $this->prazo->gte($date));
         }
 
         $lastMovementDate = $lastMovementDate instanceof CarbonInterface

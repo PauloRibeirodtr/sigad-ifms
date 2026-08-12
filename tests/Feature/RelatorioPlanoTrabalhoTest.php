@@ -4,6 +4,7 @@ use App\Enums\AtividadeStatus;
 use App\Models\Atividade;
 use App\Models\AtividadeCategoria;
 use App\Models\AtividadeMovimentacao;
+use App\Models\Pit;
 use App\Models\PlanoTrabalho;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -26,92 +27,66 @@ it('requires an authenticated verified user without a pending password change', 
         ->assertRedirect(route('verification.notice'));
 });
 
-it('shows the report search instructions before a period is informed', function () {
+it('shows all PITs and PATs without requiring a date search', function () {
     $user = User::factory()->create();
-    PlanoTrabalho::factory()->ended()->for($user)->create(['nome' => 'Plano ainda não pesquisado']);
+    $pit = Pit::factory()->for($user)->create(['ano' => 2026, 'semestre' => 1]);
+    PlanoTrabalho::factory()->for($pit)->create(['nome' => 'PAT disponível']);
 
     $this->actingAs($user)
         ->get(route('reports.index'))
         ->assertSuccessful()
-        ->assertSee('Informe um período para começar')
-        ->assertDontSee('Plano ainda não pesquisado');
+        ->assertSee('2026.1')
+        ->assertSee('PAT disponível');
 });
 
-it('validates both dates and the chronological order of the search period', function () {
+it('ignores obsolete date filters and keeps the PIT navigation available', function () {
     $user = User::factory()->create();
-
-    $this->actingAs($user)
-        ->get(route('reports.index', ['data_inicial' => '2026-01-01']))
-        ->assertSessionHasErrors('data_final');
+    $pit = Pit::factory()->for($user)->create();
 
     $this->actingAs($user)
         ->get(route('reports.index', [
             'data_inicial' => '2026-07-31',
             'data_final' => '2026-07-01',
-        ]))->assertSessionHasErrors('data_final');
+        ]))->assertSuccessful()->assertSee($pit->nome);
 });
 
-it('lists only owned plans finalized inside the inclusive selected period', function () {
+it('lists all owned PITs and hides another users PITs and PATs', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-
-    PlanoTrabalho::factory()->for($user)->create([
-        'nome' => 'Plano no limite inicial',
-        'data_inicial' => '2026-01-01',
-        'data_final' => '2026-06-01',
-    ]);
-    PlanoTrabalho::factory()->for($user)->create([
-        'nome' => 'Plano no limite final',
-        'data_inicial' => '2026-01-01',
-        'data_final' => '2026-07-31',
-    ]);
-    PlanoTrabalho::factory()->for($user)->create([
-        'nome' => 'Plano fora do período',
-        'data_inicial' => '2025-01-01',
-        'data_final' => '2026-05-31',
-    ]);
-    PlanoTrabalho::factory()->inProgress()->for($user)->create(['nome' => 'Plano ainda ativo']);
-    PlanoTrabalho::factory()->for($otherUser)->create([
-        'nome' => 'Plano encerrado alheio',
-        'data_inicial' => '2026-01-01',
-        'data_final' => '2026-07-15',
-    ]);
+    $olderPit = Pit::factory()->for($user)->create(['ano' => 2025, 'semestre' => 2]);
+    $newerPit = Pit::factory()->for($user)->create(['ano' => 2026, 'semestre' => 1]);
+    $foreignPit = Pit::factory()->for($otherUser)->create(['ano' => 2030, 'semestre' => 1]);
+    PlanoTrabalho::factory()->for($olderPit)->create(['nome' => 'PAT anterior']);
+    PlanoTrabalho::factory()->for($newerPit)->create(['nome' => 'PAT recente']);
+    PlanoTrabalho::factory()->for($foreignPit)->create(['nome' => 'PAT alheio']);
 
     $this->actingAs($user)
-        ->get(route('reports.index', [
-            'data_inicial' => '2026-06-01',
-            'data_final' => '2026-07-31',
-        ]))
+        ->get(route('reports.index'))
         ->assertSuccessful()
-        ->assertSeeInOrder(['Plano no limite final', 'Plano no limite inicial'])
-        ->assertDontSee('Plano fora do período')
-        ->assertDontSee('Plano ainda ativo')
-        ->assertDontSee('Plano encerrado alheio');
+        ->assertSeeInOrder(['PAT recente', 'PAT anterior'])
+        ->assertDontSee('PAT alheio');
 });
 
-it('keeps period filters in paginated report search results', function () {
+it('shows every registered PIT on the report page without pagination', function () {
     $user = User::factory()->create();
-    PlanoTrabalho::factory()->count(10)->for($user)->create([
-        'data_inicial' => '2026-01-01',
-        'data_final' => '2026-07-01',
-    ]);
+    Pit::factory()->count(10)->for($user)->sequence(fn ($sequence) => [
+        'ano' => 2016 + $sequence->index,
+        'semestre' => 1,
+    ])->create();
 
     $this->actingAs($user)
-        ->get(route('reports.index', [
-            'data_inicial' => '2026-06-01',
-            'data_final' => '2026-07-31',
-        ]))
+        ->get(route('reports.index'))
         ->assertSuccessful()
-        ->assertSee('page=2', false)
-        ->assertSee('data_inicial=2026-06-01', false)
-        ->assertSee('data_final=2026-07-31', false);
+        ->assertSee('2016.1')
+        ->assertSee('2025.1')
+        ->assertDontSee('page=2', false);
 });
 
-it('blocks reports for another users plan and for a plan not yet finalized', function () {
+it('blocks reports for another users PAT and allows a partial active report', function () {
     $user = User::factory()->create();
     $otherUser = User::factory()->create();
-    $foreignPlan = PlanoTrabalho::factory()->ended()->for($otherUser)->create();
-    $activePlan = PlanoTrabalho::factory()->inProgress()->for($user)->create();
+    $foreignPlan = PlanoTrabalho::factory()->for(Pit::factory()->ended()->for($otherUser))->create();
+    $activePlan = PlanoTrabalho::factory()->for(Pit::factory()->inProgress()->for($user))->create();
 
     $this->actingAs($user)
         ->get(route('reports.show', $foreignPlan))
@@ -119,24 +94,21 @@ it('blocks reports for another users plan and for a plan not yet finalized', fun
 
     $this->actingAs($user)
         ->get(route('reports.show', $activePlan))
-        ->assertNotFound();
+        ->assertSuccessful();
 });
 
 it('keeps administrators restricted to their own functional reports', function () {
     $administrator = User::factory()->administrator()->create();
     $otherUser = User::factory()->create();
-    $administratorPlan = PlanoTrabalho::factory()->ended()->for($administrator)->create([
+    $administratorPlan = PlanoTrabalho::factory()->for(Pit::factory()->ended()->for($administrator))->create([
         'nome' => 'Relatório do administrador',
     ]);
-    $foreignPlan = PlanoTrabalho::factory()->ended()->for($otherUser)->create([
+    $foreignPlan = PlanoTrabalho::factory()->for(Pit::factory()->ended()->for($otherUser))->create([
         'nome' => 'Relatório funcional alheio',
     ]);
 
     $this->actingAs($administrator)
-        ->get(route('reports.index', [
-            'data_inicial' => today()->subYear()->toDateString(),
-            'data_final' => today()->toDateString(),
-        ]))
+        ->get(route('reports.index'))
         ->assertSuccessful()
         ->assertSee('Relatório do administrador')
         ->assertDontSee('Relatório funcional alheio');
@@ -152,11 +124,11 @@ it('keeps administrators restricted to their own functional reports', function (
 
 it('generates one plan report with totals categories and chronological movement trail', function () {
     $user = User::factory()->create(['name' => 'Maria Relatora']);
-    $plan = PlanoTrabalho::factory()->for($user)->create([
-        'nome' => 'Plano Anual Individual',
+    $pit = Pit::factory()->for($user)->create([
         'data_inicial' => '2026-01-01',
         'data_final' => '2026-07-31',
     ]);
+    $plan = PlanoTrabalho::factory()->for($pit)->create(['nome' => 'PAT Anual Individual']);
     $administrativeCategory = AtividadeCategoria::factory()->for($user)->create(['nome' => 'Administrativo']);
     $teachingCategory = AtividadeCategoria::factory()->for($user)->create(['nome' => 'Ensino']);
 
@@ -193,9 +165,7 @@ it('generates one plan report with totals categories and chronological movement 
         'status' => AtividadeStatus::Concluida,
         'minutos_trabalhados' => 90,
     ]);
-    $otherPlan = PlanoTrabalho::factory()->ended()->for($user)->create([
-        'nome' => 'Plano que não integra este relatório',
-    ]);
+    $otherPlan = PlanoTrabalho::factory()->for($pit)->create(['nome' => 'PAT que não integra este relatório']);
     $otherCategory = AtividadeCategoria::factory()->for($user)->create(['nome' => 'Extensão']);
     Atividade::factory()->for($user)->create([
         'plano_trabalho_id' => $otherPlan->id,
@@ -209,7 +179,7 @@ it('generates one plan report with totals categories and chronological movement 
 
     $response
         ->assertSuccessful()
-        ->assertSee('Plano Anual Individual')
+        ->assertSee('PAT Anual Individual')
         ->assertSee('Maria Relatora')
         ->assertSee('2')
         ->assertSee('3')
@@ -240,7 +210,7 @@ it('generates one plan report with totals categories and chronological movement 
 
 it('uses creation and id as explicit tie breakers for movements on the same date', function () {
     $user = User::factory()->create();
-    $plan = PlanoTrabalho::factory()->ended()->for($user)->create();
+    $plan = PlanoTrabalho::factory()->for(Pit::factory()->ended()->for($user))->create();
     $category = AtividadeCategoria::factory()->for($user)->create();
     $activity = Atividade::factory()->for($user)->create([
         'plano_trabalho_id' => $plan->id,

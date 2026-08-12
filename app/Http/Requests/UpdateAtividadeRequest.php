@@ -55,7 +55,7 @@ class UpdateAtividadeRequest extends FormRequest
 
                 if ($activityDate->lessThan($plan->data_inicial) || $activityDate->greaterThan($plan->data_final)) {
                     $validator->errors()->add('data_atividade', sprintf(
-                        'A data informada deve estar entre %s e %s, período de vigência do Plano de Trabalho.',
+                        'A data informada deve estar entre %s e %s, período de vigência do PIT.',
                         $plan->data_inicial->format('d/m/Y'),
                         $plan->data_final->format('d/m/Y'),
                     ));

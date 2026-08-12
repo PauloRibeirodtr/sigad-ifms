@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Actions\Atividades\CreateAtividadeWithFirstMovement;
+use App\Actions\Atividades\CreateAtividade;
 use App\Actions\Atividades\GetAtividadeIndicatorCounts;
 use App\Enums\AtividadeIndicador;
 use App\Enums\AtividadePrioridade;
@@ -10,6 +10,7 @@ use App\Enums\AtividadeStatus;
 use App\Http\Requests\StoreAtividadeRequest;
 use App\Http\Requests\UpdateAtividadeRequest;
 use App\Models\Atividade;
+use App\Models\Pit;
 use App\Models\PlanoTrabalho;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -29,8 +30,10 @@ class AtividadeController extends Controller
             ->when($indicator, fn ($query, AtividadeIndicador $value) => $query->forIndicator($value))
             ->select('plano_trabalho_id');
 
-        $plans = $request->user()->planosTrabalho()
-            ->select(['id', 'user_id', 'nome', 'data_inicial', 'data_final'])
+        $plans = PlanoTrabalho::query()
+            ->whereHas('pit', fn ($query) => $query->whereBelongsTo($request->user()))
+            ->select(['id', 'pit_id', 'nome'])
+            ->with('pit:id,user_id,ano,semestre,data_inicial,data_final')
             ->when($indicator, fn ($query) => $query->whereIn('id', $matchingActivities))
             ->when($search !== '', fn ($query) => $query->whereLike('nome', '%'.$search.'%'))
             ->withCount([
@@ -40,7 +43,9 @@ class AtividadeController extends Controller
                 'atividades as atividades_urgentes_count' => fn ($query) => $query->forIndicator(AtividadeIndicador::Urgentes),
                 'atividades as atividades_sem_atualizacao_count' => fn ($query) => $query->forIndicator(AtividadeIndicador::SemAtualizacao),
             ])
-            ->orderByDesc('data_inicial')
+            ->orderByDesc(Pit::query()
+                ->select('data_inicial')
+                ->whereColumn('pits.id', 'planos_trabalho.pit_id'))
             ->paginate(9)
             ->withQueryString();
 
@@ -51,8 +56,7 @@ class AtividadeController extends Controller
         Request $request,
         PlanoTrabalho $plano,
         GetAtividadeIndicatorCounts $getIndicatorCounts,
-    ): View
-    {
+    ): View {
         Gate::authorize('view', $plano);
         $status = $request->enum('status', AtividadeStatus::class);
         $priority = $request->enum('prioridade', AtividadePrioridade::class);
@@ -132,12 +136,12 @@ class AtividadeController extends Controller
     public function store(
         StoreAtividadeRequest $request,
         PlanoTrabalho $plano,
-        CreateAtividadeWithFirstMovement $createActivity,
+        CreateAtividade $createActivity,
     ): RedirectResponse {
         $activity = $createActivity->execute($request->user(), $plano, $request->validated());
 
         return redirect()->route('plans.activities.show', [$plano, $activity])
-            ->with('status', 'Atividade e primeira movimentação cadastradas com sucesso.');
+            ->with('status', 'Atividade cadastrada com sucesso.');
     }
 
     public function show(PlanoTrabalho $plano, Atividade $atividade): View

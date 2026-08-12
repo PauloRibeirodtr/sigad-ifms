@@ -16,9 +16,9 @@ class AtividadeMovimentacaoPolicy
     public function view(User $user, AtividadeMovimentacao $movement): bool
     {
         return $movement->atividade()->whereBelongsTo($user)->exists()
-            && $movement->atividade()->whereIn(
-                'plano_trabalho_id',
-                $user->planosTrabalho()->select('id'),
+            && $movement->atividade()->whereHas(
+                'planoTrabalho.pit',
+                fn ($query) => $query->whereBelongsTo($user),
             )->exists();
     }
 

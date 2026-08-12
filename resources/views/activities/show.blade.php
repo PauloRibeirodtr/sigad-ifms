@@ -57,9 +57,12 @@
                 <span class="text-sm font-bold text-slate-500">{{ $atividade->movimentacoes->count() }} {{ $atividade->movimentacoes->count() === 1 ? 'registro' : 'registros' }}</span>
             </div>
 
-            <ol class="mt-7 grid gap-5">
-                @foreach ($atividade->movimentacoes as $movement)
-                    <li class="relative rounded-2xl border p-5 sm:p-6 {{ $movement->id === $currentMovementId ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200' }}">
+            @if ($atividade->movimentacoes->isEmpty())
+                <p class="mt-7 rounded-2xl border border-dashed border-slate-300 px-5 py-8 text-center text-sm text-slate-500">Nenhuma movimentação registrada para esta atividade.</p>
+            @else
+                <ol class="mt-7 grid gap-5">
+                    @foreach ($atividade->movimentacoes as $movement)
+                        <li class="relative rounded-2xl border p-5 sm:p-6 {{ $movement->id === $currentMovementId ? 'border-brand-300 bg-brand-50/40' : 'border-slate-200' }}">
                         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">
@@ -93,9 +96,10 @@
                             </div>
                             <a href="{{ route('plans.activities.movements.edit', [$plano, $atividade, $movement]) }}" class="inline-flex min-h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-bold text-slate-700 hover:border-brand-200 hover:text-brand-700">Editar movimentação</a>
                         </div>
-                    </li>
-                @endforeach
-            </ol>
+                        </li>
+                    @endforeach
+                </ol>
+            @endif
         </section>
     </div>
 @endsection

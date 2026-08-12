@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Atividades')
-@section('page_title', 'Atividades do Plano de Trabalho')
+@section('page_title', 'Atividades do PAT')
 @section('page_subtitle', $plano->nome)
 
 @section('content')
@@ -9,7 +9,7 @@
         <section class="rounded-3xl border border-slate-200 bg-white p-5 shadow-card sm:p-6">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <div class="flex flex-wrap items-center gap-3"><a href="{{ route('plans.show', $plano) }}" class="text-sm font-bold text-brand-700">← Plano</a><x-plan-status-badge :status="$plano->status" /></div>
+                    <div class="flex flex-wrap items-center gap-3"><a href="{{ route('plans.show', $plano) }}" class="text-sm font-bold text-brand-700">← PAT</a><x-plan-status-badge :status="$plano->status" /></div>
                     <h2 class="mt-3 text-2xl font-extrabold text-slate-950">{{ $plano->nome }}</h2>
                     <p class="mt-1 text-sm text-slate-500">{{ $activities->total() }} {{ $activities->total() === 1 ? 'atividade encontrada' : 'atividades encontradas' }}</p>
                 </div>

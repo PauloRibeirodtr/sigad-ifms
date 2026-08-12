@@ -28,7 +28,7 @@
                     Acompanhamento simples.
                 </h1>
                 <p class="mt-5 max-w-lg text-base leading-7 text-brand-100/85 xl:text-lg">
-                    Registre demandas, acompanhe movimentações e consolide seus Planos de Trabalho em um só lugar.
+                    Registre demandas, acompanhe movimentações e consolide seus PITs e PATs em um só lugar.
                 </p>
             </div>
 

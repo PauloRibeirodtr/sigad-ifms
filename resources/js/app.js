@@ -64,25 +64,6 @@ document.querySelectorAll('[data-copy-password]').forEach((button) => {
     });
 });
 
-const activityDate = document.querySelector('[data-activity-date]');
-const movementDate = document.querySelector('[data-movement-date]');
-
-if (activityDate && movementDate) {
-    let movementDateWasEdited = movementDate.value !== '';
-
-    movementDate.addEventListener('change', () => {
-        movementDateWasEdited = true;
-    });
-
-    activityDate.addEventListener('change', () => {
-        if (!movementDateWasEdited) {
-            movementDate.value = activityDate.value;
-        }
-
-        movementDate.min = activityDate.value;
-    });
-}
-
 const statusSelect = document.querySelector('[data-activity-status]');
 const waitingFields = document.querySelector('[data-waiting-fields]');
 

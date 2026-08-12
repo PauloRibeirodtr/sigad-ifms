@@ -7,6 +7,7 @@ use App\Http\Controllers\AtividadeCategoriaController;
 use App\Http\Controllers\AtividadeCategoriaStatusController;
 use App\Http\Controllers\AtividadeController;
 use App\Http\Controllers\AtividadeMovimentacaoController;
+use App\Http\Controllers\PitController;
 use App\Http\Controllers\PlanoTrabalhoController;
 use App\Http\Controllers\RelatorioPlanoTrabalhoController;
 use App\Http\Controllers\UpdateForcedPasswordController;
@@ -30,12 +31,24 @@ Route::middleware('auth')->group(function () {
         ->name('password.force.update');
 
     Route::middleware(['verified', 'password.changed'])->group(function () {
-        Route::get('/dashboard', [PlanoTrabalhoController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [PitController::class, 'index'])->name('dashboard');
 
-        Route::prefix('planos')->name('plans.')->group(function () {
-            Route::get('/', [PlanoTrabalhoController::class, 'index'])->name('index');
-            Route::get('/criar', [PlanoTrabalhoController::class, 'create'])->name('create');
-            Route::post('/', [PlanoTrabalhoController::class, 'store'])->name('store');
+        Route::prefix('pits')->name('pits.')->group(function () {
+            Route::get('/', [PitController::class, 'index'])->name('index');
+            Route::get('/criar', [PitController::class, 'create'])->name('create');
+            Route::post('/', [PitController::class, 'store'])->name('store');
+            Route::get('/{pit}', [PitController::class, 'show'])->name('show');
+            Route::get('/{pit}/editar', [PitController::class, 'edit'])->name('edit');
+            Route::put('/{pit}', [PitController::class, 'update'])->name('update');
+            Route::delete('/{pit}', [PitController::class, 'destroy'])->name('destroy');
+
+            Route::scopeBindings()->prefix('{pit}/pats')->name('plans.')->group(function () {
+                Route::get('/criar', [PlanoTrabalhoController::class, 'create'])->name('create');
+                Route::post('/', [PlanoTrabalhoController::class, 'store'])->name('store');
+            });
+        });
+
+        Route::prefix('pats')->name('plans.')->group(function () {
             Route::get('/{plano}', [PlanoTrabalhoController::class, 'show'])->name('show');
             Route::get('/{plano}/editar', [PlanoTrabalhoController::class, 'edit'])->name('edit');
             Route::put('/{plano}', [PlanoTrabalhoController::class, 'update'])->name('update');
@@ -62,7 +75,7 @@ Route::middleware('auth')->group(function () {
 
         Route::prefix('relatorios')->name('reports.')->group(function () {
             Route::get('/', [RelatorioPlanoTrabalhoController::class, 'index'])->name('index');
-            Route::get('/planos/{plano}', [RelatorioPlanoTrabalhoController::class, 'show'])->name('show');
+            Route::get('/pats/{plano}', [RelatorioPlanoTrabalhoController::class, 'show'])->name('show');
         });
 
         Route::prefix('categorias')->name('categories.')->group(function () {

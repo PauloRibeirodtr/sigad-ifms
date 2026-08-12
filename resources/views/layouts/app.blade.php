@@ -38,13 +38,13 @@
                     Início
                 </x-sidebar-link>
 
-                <x-sidebar-link :href="route('plans.index')" :active="request()->routeIs('plans.*')">
+                <x-sidebar-link :href="route('pits.index')" :active="request()->routeIs('pits.*', 'plans.*')">
                     <x-slot:icon>
                         <svg viewBox="0 0 24 24" class="size-5" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                             <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H10l2 2h5.5A2.5 2.5 0 0 1 20 7.5v10a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5v-12Z" stroke-linejoin="round"/>
                         </svg>
                     </x-slot:icon>
-                    Planos de Trabalho
+                    PITs e PATs
                 </x-sidebar-link>
 
                 <x-sidebar-link :href="route('categories.index')" :active="request()->routeIs('categories.*')">

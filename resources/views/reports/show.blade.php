@@ -1,18 +1,18 @@
 @extends('layouts.report')
 
-@section('title', 'Relatório — '.$plan->nome)
+@section('title', 'Relatório do PAT — '.$plan->nome)
 
 @section('content')
     <article class="report-document overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-card print:rounded-none print:border-0 print:shadow-none">
         <header class="border-b border-slate-200 bg-linear-to-br from-brand-950 to-brand-700 px-6 py-8 text-white sm:px-10 print:border-b-2 print:border-brand-800 print:bg-white print:px-0 print:py-5 print:text-slate-950">
             <div class="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-200 print:text-brand-700">SIGAD · Relatório de Plano de Trabalho</p>
+                    <p class="text-xs font-extrabold uppercase tracking-[0.18em] text-brand-200 print:text-brand-700">SIGAD · Relatório de PAT</p>
                     <h1 class="mt-3 text-3xl font-extrabold tracking-tight">{{ $plan->nome }}</h1>
                     <p class="mt-2 max-w-3xl text-sm leading-6 text-white/75 print:text-slate-600">{{ $plan->descricao ?: 'Sem descrição informada.' }}</p>
                 </div>
                 <div class="shrink-0 rounded-2xl bg-white/10 px-4 py-3 text-sm ring-1 ring-white/15 print:bg-slate-50 print:text-slate-700 print:ring-slate-200">
-                    <p class="text-xs font-bold uppercase tracking-wide text-white/60 print:text-slate-400">Período do plano</p>
+                    <p class="text-xs font-bold uppercase tracking-wide text-white/60 print:text-slate-400">PIT {{ $plan->pit->nome }}</p>
                     <p class="mt-1 font-extrabold">{{ $plan->data_inicial->format('d/m/Y') }} a {{ $plan->data_final->format('d/m/Y') }}</p>
                 </div>
             </div>
@@ -78,9 +78,12 @@
 
                                 <div class="px-5 py-4">
                                     <h4 class="text-xs font-extrabold uppercase tracking-wide text-slate-500">Movimentações</h4>
-                                    <ol class="mt-3 grid gap-3 border-l-2 border-brand-100 pl-5">
-                                        @foreach ($activity->movimentacoes as $movement)
-                                            <li class="relative">
+                                    @if ($activity->movimentacoes->isEmpty())
+                                        <p class="mt-3 text-sm text-slate-500">Nenhuma movimentação registrada.</p>
+                                    @else
+                                        <ol class="mt-3 grid gap-3 border-l-2 border-brand-100 pl-5">
+                                            @foreach ($activity->movimentacoes as $movement)
+                                                <li class="relative">
                                                 <span class="absolute -left-[1.68rem] top-1.5 size-3 rounded-full border-2 border-brand-700 bg-white" aria-hidden="true"></span>
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <time class="text-xs font-extrabold text-slate-700">{{ $movement->data_movimentacao->format('d/m/Y') }}</time>
@@ -91,9 +94,10 @@
                                                 @if ($movement->anexo_nome_original)
                                                     <a href="{{ route('plans.activities.movements.download', [$plan, $activity, $movement]) }}" class="mt-2 inline-flex items-center gap-1 text-xs font-bold text-brand-700 print:text-slate-600">Anexo: {{ $movement->anexo_nome_original }}</a>
                                                 @endif
-                                            </li>
-                                        @endforeach
-                                    </ol>
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    @endif
                                 </div>
                             </article>
                         @endforeach

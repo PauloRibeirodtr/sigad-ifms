@@ -7,6 +7,7 @@ use App\Enums\AtividadeStatus;
 use App\Models\Atividade;
 use App\Models\AtividadeCategoria;
 use App\Models\AtividadeMovimentacao;
+use App\Models\Pit;
 use App\Models\PlanoTrabalho;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -20,11 +21,10 @@ class AtividadeFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
-            'plano_trabalho_id' => fn (array $attributes) => PlanoTrabalho::factory()->create([
-                'user_id' => $attributes['user_id'],
-                'data_inicial' => today()->subMonths(2),
-                'data_final' => today()->addMonths(2),
-            ])->id,
+            'plano_trabalho_id' => fn (array $attributes) => PlanoTrabalho::factory()
+                ->for(Pit::factory()->for(User::query()->findOrFail($attributes['user_id']))->inProgress())
+                ->create()
+                ->id,
             'categoria_id' => fn (array $attributes) => AtividadeCategoria::factory()->create([
                 'user_id' => $attributes['user_id'],
             ])->id,

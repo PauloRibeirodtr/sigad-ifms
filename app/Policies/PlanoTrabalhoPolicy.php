@@ -14,7 +14,7 @@ class PlanoTrabalhoPolicy
 
     public function view(User $user, PlanoTrabalho $planoTrabalho): bool
     {
-        return $user->getKey() === $planoTrabalho->user_id;
+        return $user->getKey() === $planoTrabalho->pit->user_id;
     }
 
     public function create(User $user): bool
@@ -24,7 +24,7 @@ class PlanoTrabalhoPolicy
 
     public function update(User $user, PlanoTrabalho $planoTrabalho): bool
     {
-        return $user->getKey() === $planoTrabalho->user_id;
+        return $user->getKey() === $planoTrabalho->pit->user_id;
     }
 
     public function delete(User $user, PlanoTrabalho $planoTrabalho): bool

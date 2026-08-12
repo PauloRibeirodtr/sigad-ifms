@@ -5,7 +5,7 @@ use App\Enums\AtividadePrioridade;
 use App\Enums\AtividadeStatus;
 use App\Models\Atividade;
 use App\Models\AtividadeCategoria;
-use App\Models\AtividadeMovimentacao;
+use App\Models\Pit;
 use App\Models\PlanoTrabalho;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -13,11 +13,11 @@ use Carbon\CarbonImmutable;
 function indicatorContext(): array
 {
     $user = User::factory()->create();
-    $plan = PlanoTrabalho::factory()->for($user)->create([
-        'nome' => 'Plano de acompanhamento',
+    $pit = Pit::factory()->for($user)->create([
         'data_inicial' => '2026-01-01',
         'data_final' => '2026-12-31',
     ]);
+    $plan = PlanoTrabalho::factory()->for($pit)->create(['nome' => 'PAT de acompanhamento']);
     $category = AtividadeCategoria::factory()->for($user)->create(['nome' => 'Colegiado']);
 
     return [$user, $plan, $category];
@@ -103,6 +103,25 @@ it('classifies ten full days without movement while the deadline remains valid',
         ->and($activities->firstWhere('id', $exactlyTenDays->id)->isWithoutRecentUpdate())->toBeTrue();
 });
 
+it('classifies an old open activity without movements as lacking an update', function () {
+    [$user, $plan, $category] = indicatorContext();
+    $activity = Atividade::factory()
+        ->for($user)
+        ->for($plan, 'planoTrabalho')
+        ->for($category, 'categoria')
+        ->create([
+            'data_atividade' => '2026-07-24',
+            'status' => AtividadeStatus::Aberta,
+            'prazo' => null,
+        ]);
+    $activity->movimentacoes()->delete();
+
+    $activities = Atividade::query()->withLatestMovementDate()->withoutRecentUpdate()->get();
+
+    expect($activities->pluck('id')->all())->toBe([$activity->id])
+        ->and($activities->sole()->isWithoutRecentUpdate())->toBeTrue();
+});
+
 it('keeps urgent and waiting indicators restricted to operational states', function () {
     [$user, $plan, $category] = indicatorContext();
     $urgent = createIndicatorActivity($user, $plan, $category, [
@@ -135,10 +154,11 @@ it('shows dashboard indicator counts only for the authenticated user', function 
         'status' => AtividadeStatus::Aguardando,
     ], '2026-07-20');
     $otherUser = User::factory()->create();
-    $otherPlan = PlanoTrabalho::factory()->for($otherUser)->create([
+    $otherPit = Pit::factory()->for($otherUser)->create([
         'data_inicial' => '2026-01-01',
         'data_final' => '2026-12-31',
     ]);
+    $otherPlan = PlanoTrabalho::factory()->for($otherPit)->create();
     $otherCategory = AtividadeCategoria::factory()->for($otherUser)->create();
     createIndicatorActivity($otherUser, $otherPlan, $otherCategory, [
         'titulo' => 'Indicador alheio',
@@ -147,12 +167,7 @@ it('shows dashboard indicator counts only for the authenticated user', function 
 
     $response = $this->actingAs($user)->get(route('dashboard'))->assertSuccessful();
 
-    expect($response->viewData('activityIndicators'))->toBe([
-        'atrasadas' => 1,
-        'aguardando' => 1,
-        'urgentes' => 1,
-        'sem_atualizacao' => 1,
-    ]);
+    expect($response->viewData('pits')->sole()->planosTrabalho->sum('atividades_count'))->toBe(2);
 });
 
 it('filters a plan activity list by indicator and exposes latest movement date', function () {
@@ -202,11 +217,13 @@ it('filters and paginates plan shortcuts from the activity overview', function (
     $user = User::factory()->create();
 
     foreach (range(1, 10) as $number) {
-        $plan = PlanoTrabalho::factory()->for($user)->create([
-            'nome' => sprintf('Plano indicador %02d', $number),
+        $pit = Pit::factory()->for($user)->create([
+            'ano' => 2020 + $number,
+            'semestre' => 1,
             'data_inicial' => '2026-01-01',
             'data_final' => '2026-12-31',
         ]);
+        $plan = PlanoTrabalho::factory()->for($pit)->create(['nome' => sprintf('PAT indicador %02d', $number)]);
         $category = AtividadeCategoria::factory()->for($user)->create();
         createIndicatorActivity($user, $plan, $category, [
             'titulo' => 'Demanda atrasada',
@@ -217,7 +234,7 @@ it('filters and paginates plan shortcuts from the activity overview', function (
     $this->actingAs($user)
         ->get(route('activities.overview', ['indicador' => 'atrasadas']))
         ->assertSuccessful()
-        ->assertSee('Exibindo somente Planos de Trabalho')
+        ->assertSee('Exibindo somente PATs')
         ->assertSee('page=2', false);
 });
 
@@ -225,11 +242,11 @@ it('keeps indicator plan overview isolated from other users', function () {
     [$user, $plan, $category] = indicatorContext();
     createIndicatorActivity($user, $plan, $category, ['prazo' => '2026-08-01']);
     $otherUser = User::factory()->create();
-    $foreignPlan = PlanoTrabalho::factory()->for($otherUser)->create([
-        'nome' => 'Plano alheio atrasado',
+    $foreignPit = Pit::factory()->for($otherUser)->create([
         'data_inicial' => '2026-01-01',
         'data_final' => '2026-12-31',
     ]);
+    $foreignPlan = PlanoTrabalho::factory()->for($foreignPit)->create(['nome' => 'PAT alheio atrasado']);
     $foreignCategory = AtividadeCategoria::factory()->for($otherUser)->create();
     createIndicatorActivity($otherUser, $foreignPlan, $foreignCategory, ['prazo' => '2026-08-01']);
 
@@ -237,7 +254,7 @@ it('keeps indicator plan overview isolated from other users', function () {
         ->get(route('activities.overview', ['indicador' => 'atrasadas']))
         ->assertSuccessful()
         ->assertSee($plan->nome)
-        ->assertDontSee('Plano alheio atrasado');
+        ->assertDontSee('PAT alheio atrasado');
 });
 
 it('keeps plan activity queries paginated when using indicators', function () {

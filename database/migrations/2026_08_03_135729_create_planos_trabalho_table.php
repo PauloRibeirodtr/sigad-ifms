@@ -13,15 +13,12 @@ return new class extends Migration
     {
         Schema::create('planos_trabalho', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->restrictOnDelete();
+            $table->foreignId('pit_id')->constrained()->restrictOnDelete();
             $table->string('nome');
             $table->text('descricao')->nullable();
-            $table->date('data_inicial');
-            $table->date('data_final');
             $table->timestamps();
 
-            $table->index(['user_id', 'data_inicial']);
-            $table->index(['user_id', 'data_final']);
+            $table->index(['pit_id', 'nome']);
         });
     }
 

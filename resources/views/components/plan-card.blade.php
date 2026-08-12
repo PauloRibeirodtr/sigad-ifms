@@ -11,7 +11,8 @@
             <x-plan-status-badge :status="$plan->status" />
         </div>
 
-        <h3 class="mt-5 text-lg font-extrabold tracking-tight text-slate-950">{{ $plan->nome }}</h3>
+        <p class="mt-5 text-xs font-extrabold uppercase tracking-[0.16em] text-brand-700">PAT</p>
+        <h3 class="mt-1 text-lg font-extrabold tracking-tight text-slate-950">{{ $plan->nome }}</h3>
         <p class="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-slate-500">{{ $plan->descricao ?: 'Sem descrição.' }}</p>
 
         <div class="mt-5 flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-3 text-xs font-semibold text-slate-600">
@@ -45,7 +46,7 @@
 
     <div class="grid grid-cols-3 gap-2 border-t border-slate-100 bg-slate-50/60 p-4">
         <a href="{{ route('plans.activities.index', $plan) }}" class="inline-flex min-h-11 items-center justify-center rounded-xl bg-brand-700 px-2 text-xs font-bold text-white transition hover:bg-brand-800 sm:text-sm">Atividades</a>
-        <a href="{{ route('plans.show', $plan) }}" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:text-sm">Plano</a>
+        <a href="{{ route('plans.show', $plan) }}" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 sm:text-sm">PAT</a>
         <a href="{{ route('plans.edit', $plan) }}" class="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100">Editar</a>
     </div>
 </article>

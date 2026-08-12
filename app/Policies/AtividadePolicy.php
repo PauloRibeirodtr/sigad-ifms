@@ -15,7 +15,10 @@ class AtividadePolicy
     public function view(User $user, Atividade $atividade): bool
     {
         return $user->getKey() === $atividade->user_id
-            && $atividade->planoTrabalho()->whereBelongsTo($user)->exists();
+            && $atividade->planoTrabalho()->whereHas(
+                'pit',
+                fn ($query) => $query->whereBelongsTo($user),
+            )->exists();
     }
 
     public function create(User $user): bool

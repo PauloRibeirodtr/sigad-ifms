@@ -13,20 +13,20 @@ it('renders the dashboard for an authenticated user', function () {
         ->assertSuccessful()
         ->assertSee('test@example.com')
         ->assertSee('SIGAD')
-        ->assertSeeText('Meus Planos de Trabalho')
+        ->assertSeeText('Meus PITs')
         ->assertDontSeeText('Resumo dos seus planos')
         ->assertDontSeeText('Atividades que precisam de atenção')
-        ->assertSee('Nenhum Plano de Trabalho cadastrado')
+        ->assertSee('Nenhum PIT cadastrado')
         ->assertDontSee('PrismaBet');
 });
 
-it('shows only the work plans section on the plans page', function () {
+it('shows only the PIT section on the PIT page', function () {
     $user = User::factory()->create();
 
     $this->actingAs($user)
-        ->get(route('plans.index'))
+        ->get(route('pits.index'))
         ->assertSuccessful()
-        ->assertSeeText('Meus Planos de Trabalho')
+        ->assertSeeText('Meus PITs')
         ->assertDontSeeText('Resumo dos seus planos')
         ->assertDontSeeText('Atividades que precisam de atenção');
 });

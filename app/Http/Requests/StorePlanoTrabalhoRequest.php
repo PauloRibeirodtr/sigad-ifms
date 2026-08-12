@@ -9,7 +9,8 @@ class StorePlanoTrabalhoRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()->can('create', PlanoTrabalho::class);
+        return $this->user()->can('create', PlanoTrabalho::class)
+            && $this->user()->can('view', $this->route('pit'));
     }
 
     public function rules(): array
@@ -17,15 +18,6 @@ class StorePlanoTrabalhoRequest extends FormRequest
         return [
             'nome' => ['required', 'string', 'max:255'],
             'descricao' => ['nullable', 'string', 'max:5000'],
-            'data_inicial' => ['required', 'date_format:Y-m-d'],
-            'data_final' => ['required', 'date_format:Y-m-d', 'after_or_equal:data_inicial'],
-        ];
-    }
-
-    public function messages(): array
-    {
-        return [
-            'data_final.after_or_equal' => 'A data final deve ser igual ou posterior à data inicial.',
         ];
     }
 
@@ -34,8 +26,6 @@ class StorePlanoTrabalhoRequest extends FormRequest
         return [
             'nome' => 'nome',
             'descricao' => 'descrição',
-            'data_inicial' => 'data inicial',
-            'data_final' => 'data final',
         ];
     }
 

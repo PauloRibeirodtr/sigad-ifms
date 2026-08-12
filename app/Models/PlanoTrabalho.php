@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Enums\PlanoTrabalhoStatus;
+use Database\Factories\PlanoTrabalhoFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PlanoTrabalho extends Model
 {
-    /** @use HasFactory<\Database\Factories\PlanoTrabalhoFactory> */
+    /** @use HasFactory<PlanoTrabalhoFactory> */
     use HasFactory;
 
     protected $table = 'planos_trabalho';
@@ -19,13 +19,11 @@ class PlanoTrabalho extends Model
     protected $fillable = [
         'nome',
         'descricao',
-        'data_inicial',
-        'data_final',
     ];
 
-    public function user(): BelongsTo
+    public function pit(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Pit::class);
     }
 
     public function atividades(): HasMany
@@ -33,26 +31,18 @@ class PlanoTrabalho extends Model
         return $this->hasMany(Atividade::class);
     }
 
-    protected function status(): Attribute
+    protected function dataInicial(): Attribute
     {
-        return Attribute::get(function (): PlanoTrabalhoStatus {
-            if (today()->lt($this->data_inicial)) {
-                return PlanoTrabalhoStatus::Aguardando;
-            }
-
-            if (today()->gt($this->data_final)) {
-                return PlanoTrabalhoStatus::Encerrado;
-            }
-
-            return PlanoTrabalhoStatus::EmAndamento;
-        })->withoutObjectCaching();
+        return Attribute::get(fn () => $this->pit->data_inicial)->withoutObjectCaching();
     }
 
-    protected function casts(): array
+    protected function dataFinal(): Attribute
     {
-        return [
-            'data_inicial' => 'date',
-            'data_final' => 'date',
-        ];
+        return Attribute::get(fn () => $this->pit->data_final)->withoutObjectCaching();
+    }
+
+    protected function status(): Attribute
+    {
+        return Attribute::get(fn () => $this->pit->status)->withoutObjectCaching();
     }
 }

@@ -12,16 +12,11 @@
             <x-alert type="error" class="mb-6">Você precisa cadastrar uma categoria ativa antes de criar uma atividade. <a href="{{ route('categories.create') }}" class="font-extrabold underline">Cadastrar categoria</a></x-alert>
         @endif
 
-        <form method="POST" action="{{ route('plans.activities.store', $plano) }}" enctype="multipart/form-data" class="grid gap-6">
+        <form method="POST" action="{{ route('plans.activities.store', $plano) }}" class="grid gap-6">
             @csrf
             <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-                <div class="mb-7"><p class="text-sm font-bold text-brand-700">1. Dados gerais</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Identificação da atividade</h2><p class="mt-2 text-sm text-slate-500">Período permitido: {{ $plano->data_inicial->format('d/m/Y') }} a {{ $plano->data_final->format('d/m/Y') }}.</p></div>
+                <div class="mb-7"><p class="text-sm font-bold text-brand-700">Dados gerais</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Identificação da atividade</h2><p class="mt-2 text-sm text-slate-500">Período permitido: {{ $plano->data_inicial->format('d/m/Y') }} a {{ $plano->data_final->format('d/m/Y') }}.</p></div>
                 <x-activity-general-fields :plan="$plano" :categories="$categories" />
-            </section>
-
-            <section class="rounded-3xl border border-slate-200 bg-white p-6 shadow-card sm:p-8">
-                <div class="mb-7"><p class="text-sm font-bold text-brand-700">2. Primeira movimentação</p><h2 class="mt-1 text-2xl font-extrabold text-slate-950">Primeira ação realizada</h2><p class="mt-2 text-sm text-slate-500">A atividade e esta movimentação serão gravadas juntas, na mesma transação.</p></div>
-                <x-first-movement-fields :plan="$plano" />
             </section>
 
             <div class="flex flex-col-reverse gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-card sm:flex-row sm:justify-end">

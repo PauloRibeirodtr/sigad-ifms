@@ -6,6 +6,7 @@ use App\Enums\AtividadeStatus;
 use App\Models\Atividade;
 use App\Models\AtividadeCategoria;
 use App\Models\AtividadeMovimentacao;
+use App\Models\Pit;
 use App\Models\PlanoTrabalho;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -14,10 +15,11 @@ use Illuminate\Support\Facades\Storage;
 function movementContext(): array
 {
     $user = User::factory()->create();
-    $plan = PlanoTrabalho::factory()->for($user)->create([
+    $pit = Pit::factory()->for($user)->create([
         'data_inicial' => '2026-02-01',
         'data_final' => '2026-07-31',
     ]);
+    $plan = PlanoTrabalho::factory()->for($pit)->create();
     $category = AtividadeCategoria::factory()->for($user)->create();
     $activity = Atividade::factory()
         ->for($user)
@@ -43,8 +45,9 @@ function movementPayload(array $overrides = []): array
     ], $overrides);
 }
 
-it('adds a movement and synchronizes the current activity state', function () {
+it('adds the first movement later and synchronizes the current activity state', function () {
     [$user, $plan, $activity] = movementContext();
+    $activity->movimentacoes()->delete();
 
     $this->actingAs($user)
         ->post(route('plans.activities.movements.store', [$plan, $activity]), movementPayload([
@@ -63,7 +66,8 @@ it('adds a movement and synchronizes the current activity state', function () {
         ->and($movement->minutos_trabalhados)->toBe(45)
         ->and($activity->refresh()->status)->toBe(AtividadeStatus::Aguardando)
         ->and($activity->aguardando_por)->toBe(AguardandoPor::SetorInterno)
-        ->and($activity->aguardando_descricao)->toBe('COGEA');
+        ->and($activity->aguardando_descricao)->toBe('COGEA')
+        ->and($activity->movimentacoes()->count())->toBe(1);
 });
 
 it('uses movement date then registration time then id as the explicit state order', function () {
@@ -155,7 +159,7 @@ it('validates movement dates and worked minutes', function (array $overrides, st
     'zero minutes' => [['minutos_trabalhados' => 0], 'minutos_trabalhados'],
 ]);
 
-it('stores the initial and subsequent attachment privately with generated names', function () {
+it('stores a movement attachment privately with a generated name', function () {
     Storage::fake('local');
     [$user, $plan, $activity] = movementContext();
     $attachment = UploadedFile::fake()->create('documentação.pdf', 100, 'application/pdf');
@@ -172,30 +176,6 @@ it('stores the initial and subsequent attachment privately with generated names'
         ->and($movement->anexo_path)->not->toContain('documentação.pdf')
         ->and($movement->anexo_path)->toStartWith('movimentacoes/'.$user->id.'/');
     Storage::disk('local')->assertExists($movement->anexo_path);
-
-    $category = AtividadeCategoria::factory()->for($user)->create();
-    $firstAttachment = UploadedFile::fake()->image('registro.png');
-
-    $this->actingAs($user)
-        ->post(route('plans.activities.store', $plan), [
-            'categoria_id' => $category->id,
-            'titulo' => 'Atividade com anexo inicial',
-            'data_atividade' => '2026-04-01',
-            'prioridade' => 'normal',
-            'data_movimentacao' => '2026-04-01',
-            'movimentacao_descricao' => 'Registro inicial',
-            'movimentacao_status' => 'aberta',
-            'minutos_trabalhados' => null,
-            'anexo' => $firstAttachment,
-        ])
-        ->assertRedirect();
-
-    $initialMovement = Atividade::query()
-        ->where('titulo', 'Atividade com anexo inicial')
-        ->firstOrFail()
-        ->movimentacoes()
-        ->sole();
-    Storage::disk('local')->assertExists($initialMovement->anexo_path);
 });
 
 it('rejects invalid attachment extension mime type and size', function (UploadedFile $attachment) {
